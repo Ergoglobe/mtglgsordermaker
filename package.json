@@ -3,10 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "futil-js": "^1.49.0",
+    "lodash": "^4.17.10",
     "react": "^16.4.1",
+    "react-autocomplete": "^1.8.1",
+    "react-autosuggest": "^9.3.4",
     "react-dom": "^16.4.1",
+    "react-redux": "^5.0.7",
     "react-scripts": "1.1.4",
-    "react-table": "^6.8.6"
+    "react-table": "^6.8.6",
+    "scryfall-sdk": "^1.2.1",
+    "zip-loader": "^1.1.0"
   },
   "scripts": {
     "start": "react-scripts start",

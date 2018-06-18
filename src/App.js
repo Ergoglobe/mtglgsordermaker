@@ -1,84 +1,46 @@
 import React, {Component} from 'react';
-// import ReactTable from "react-table";
-import OrderTable from "./components/OrderTable"
 
-import AllCardsData from './AllCards-x';
+// Libraries
+import _ from 'lodash';
+
+// Card Data
+import AllCardData from './JSON/AllCards-x';
+
+// My Components
+import Order from './components/Order/Order';
+import ValidOrder from "./components/ValidOrder";
+import YourDecklist from './components/YourDecklist';
 
 import './App.css';
 import 'react-table/react-table.css'
+
+const tempOrderInput =
+    '1 Act of Treason\n' +
+    '1 Akoum Refuge\n' +
+    '1 Anticipate\n' +
+    '1 Ashiok, Nightmare Weaver\n' +
+    '1 Blade of the Bloodchief\n' +
+    '1 Blighted Fen';
 
 class App extends Component {
 
     constructor(props) {
         super(props);
+
+
         this.state = {
-            AllCards: AllCardsData,
-            OrderInput: '',
-            OrderData: [
-
-                {
-                    quantity: 0,
-                    quantity_requested: 1,
-                    name: 'Swamp',
-                    sets: ['dom', 'rix', 'xln']
-
-                }],
-            OrderColumns: [
-                {
-                    Header: 'Name',
-                    accessor: 'name'
-
-                }
-                ,
-                {
-                    Header: 'Cost',
-                    accessor: 'cost',
-                    Cell: <div> $0.00 </div>
-
-                }
-                ,
-                {
-                    Header: 'Quantity',
-                    columns: [
-                        {
-                            Header: 'Total',
-                            accessor: 'quantity'
-                        }
-                        ,
-                        {
-                            Header: 'Requested',
-                            accessor: 'quantity_requested'
-                        }]
-                }
-                ,
-                {
-                    Header: 'Sets',
-                    columns: [
-                        /*{
-
-                            Header: 'dom',
-                            accessor: 'sets',
-                            Cell: row => (
-                                <div>
-                                    {
-                                        row.value.includes('dom') === true ? <CardCounterComponent/> : 'False'
-                                    }
-                                </div>
-                            )
-
-
-                        }*/
-                    ]
-                }
-
-            ],
-
+            AllCards: AllCardData,
+            OrderInput: tempOrderInput,
+            OrderData: [],
+            OrderSets: [],
+            OrderValid: false,
 
         };
 
         this.handleChange = this.handleChange.bind(this);
         this.handleOrderInputChange = this.handleOrderInputChange.bind(this);
 
+        this.isOrderValid = this.isOrderValid.bind(this);
         // this.handleSubmit = this.handleSubmit.bind(this);
     }
 
@@ -86,13 +48,35 @@ class App extends Component {
         this.setState({OrderInput: event.target.OrderInput});
     }
 
+    isOrderValid() {
+        // console.log(this.state.OrderData);
+
+        // console.log(!_.isEmpty(this.state.OrderData));
+        // console.log(_.find(this.state.OrderData, {'cardFound': false}));
+
+        // If order is not empty AND all cards are found then order is valid
+        if ((!_.isEmpty(this.state.OrderData)) &&
+            (_.find(this.state.OrderData, {'cardFound': false}) === undefined)) {
+
+            // console.log('OrderValid: true');
+
+            this.setState({OrderValid: true}, () => {
+                // console.log(this.state.OrderValid)
+            });
+
+        }
+
+        // console.log(this.state);
+
+    }
+
     // Find card info from AllCards
-    createOrderFunction() {
-        console.log('createOrderFunction');
-        console.log('OrderInput:' + this.state.OrderInput);
+    addToOrder() {
+        // console.log('addToOrder');
+        // console.log('OrderInput:' + this.state.OrderInput);
 
         let OrderList = this.state.OrderInput.split("\n");
-        console.log('OrderList:' + OrderList);
+        // console.log('OrderList:' + OrderList);
 
         let CurrentCard;
 
@@ -101,44 +85,143 @@ class App extends Component {
             //var AllCards = this.state.AllCards;
             let cardQuantity = CurrentCard.substr(0, CurrentCard.indexOf(' '));
 
-            // console.log('xxx:' + CurrentCard.substr(CurrentCard.indexOf(' ') + 1));
+            // test if cardQuantity is \d+ or \d+x else make user change quantity
 
-            let card = this.state.AllCards[CurrentCard.substr(CurrentCard.indexOf(' ') + 1)];
+            // console.log('Card Entered:' + CurrentCard.substr(CurrentCard.indexOf(' ') + 1));
+            let cardname = CurrentCard.substr(CurrentCard.indexOf(' ') + 1);
 
-            let printings = card["printings"];
+            // let card = this.state.AllCards[];
+            let card = this.state.AllCards[cardname];
 
-            // console.log('Card:' + card);
-            // console.log('Printings:' + printings);
+            // If Card is not found in AllCards
+            if (card === undefined) {
+                // console.log('Card not found');
 
-            console.log(cardQuantity + 'x Card Name:' + card["name"]);
-            console.log('Last Printing:' + printings[printings.length - 1]);
+                let cardFoundIndex = _.findIndex(this.state.OrderData, function (o) {
+                    return o.name === cardname
+                });
 
-            let lastprinting = printings[printings.length - 1];
-            let tempColumns = this.state.OrderColumns;
+                let tempOrderData = this.state.OrderData;
 
-            console.log(tempColumns);
-/*
-            tempColumns[3].columns.push({
-                Header: lastprinting,
-                accessor: 'sets',
-                Cell: row => (
-                    <div>
+                // If card is already in order, increase quantity
+                if (cardFoundIndex !== -1) {
+                    // console.log('Card Already In Order');
+
+                    let tempOrderData = this.state.OrderData;
+                    tempOrderData[cardFoundIndex].requested += parseInt(cardQuantity, 10);
+
+                }
+                else {
+
+                    tempOrderData.push(
                         {
-                            row.value.includes(lastprinting.toLowerCase()) === true ? <CardCounterComponent/> : 'False'
+                            quantity: 0,
+                            requested: parseInt(cardQuantity, 10),
+                            cardFound: false,
+                            card: card,
+                            name: cardname,
                         }
-                    </div>
-                )
-            });
+                    );
+                }
 
-            console.log(tempColumns);
+                // Update State of order
+                this.setState({OrderData: tempOrderData});
+                // Card match found
+            } else {
 
-            this.setState({OrderColumns: tempColumns});
+                // console.log('Card found');
+                // console.log(card);
 
-            console.log(this.state.OrderColumns);
-*/
+                // console.log(cardQuantity + 'x ' + card["name"]);
+
+                // Check if card already exists in order and increase quantity
+
+                let cardFoundIndex = _.findIndex(this.state.OrderData, function (o) {
+                    return o.name === card["name"]
+                });
+
+                // If card is already in order, increase quantity
+                if (cardFoundIndex !== -1) {
+                    // console.log('Card Already In Order');
+
+                    // Add quantity and card to order data
+                    let tempOrderData = this.state.OrderData;
+
+                    tempOrderData[cardFoundIndex].requested += parseInt(cardQuantity, 10);
+
+                    // Update State of order
+                    this.setState({OrderData: tempOrderData});
+
+                }
+                // Else add card
+                else {
+
+                    let printings = card["printings"];
+
+                    // console.log('Card:' + card);
+                    // console.log('Printings:' + printings);
+
+                    // console.log('Last Printing:' + printings[printings.length - 1]);
+
+                    // let lastprinting = printings[printings.length - 1].toLowerCase();
+
+                    let tempOrderSets = this.state.OrderSets;
+
+                    // console.log(tempOrderSets);
+                    // console.log(lastprinting);
+
+                    // console.log( array.findIndex( tempOrderSets, lastprinting ) );
+
+                    // If lastprinting isnt in tempOrderSets
+
+                    printings.forEach((printing) => {
+                        if (_.indexOf(tempOrderSets, printing) === -1) {
+                            // console.log('is not in OrderSets.');
+                            // Push it to the array
+                            tempOrderSets.push(printing);
+
+                            // Set state
+                            this.setState({OrderSets: tempOrderSets});
+                        }
+                    });
+
+                    /*
+                    if (_.indexOf(tempOrderSets, lastprinting) === -1) {
+                        // console.log('is not in OrderSets.');
+                        // Push it to the array
+                        tempOrderSets.push(lastprinting);
+
+                        // Set state
+                        this.setState({OrderSets: tempOrderSets});
+                    }
+                    */
+
+                    console.log(card);
+
+                    // Add quantity and card to order data
+                    let tempOrderData = this.state.OrderData;
+                    tempOrderData.push(
+                        {
+                            quantity: 0,
+                            requested: parseInt(cardQuantity, 10),
+                            cardFound: true,
+                            card: card,
+                            name: card["name"],
+                        }
+                    );
+
+                    // Update State of order
+                    this.setState({OrderData: tempOrderData});
+                }
+
+                // console.log('this.state.OrderSets');
+                // console.log(this.state.OrderSets);
+            }
+
         }
 
-        this.forceUpdate();
+        // update order validity
+        this.isOrderValid();
 
     }
 
@@ -166,55 +249,32 @@ class App extends Component {
                         <textarea
                             placeholder={'Paste your decklist here!'}
                             value={this.state.OrderInput}
-                            onChange={this.handleOrderInputChange}
-                        />
+                            onChange={this.handleOrderInputChange}>
+
+                        </textarea>
                     </div>
 
                     <div className="Create-Order-Button">
                         <button onClick={() => {
-                            this.createOrderFunction()
+                            this.addToOrder()
                         }}>
-                            Create Order List
+                            Add To Order
                         </button>
                     </div>
                 </header>
-/*
-                <OrderTable
-                    tabData={this.state.OrderData}
-                    tabColumns={this.state.OrderColumns}
-                />
-*/
+
+                <YourDecklist OrderData={this.state.OrderData}/>
+
+                <ValidOrder OrderValid={this.state.OrderValid}/>
+
+                <Order OrderSets={this.state.OrderSets}
+                       OrderData={this.state.OrderData}
+                       OrderValid={this.state.OrderValid}/>
+
             </div>
         );
     }
 
-}
-
-class CardCounterComponent extends React.Component {
-    render() {
-        return (
-            <div>
-
-                <button>+</button>
-                <div>0</div>
-                <button>-</button>
-                <CardCostComponent/>
-
-            </div>
-        )
-
-    }
-}
-
-class CardCostComponent extends React.Component {
-    render() {
-        return (
-            <div>
-                $un,der.dev
-            </div>
-        )
-
-    }
 }
 
 export default App;
